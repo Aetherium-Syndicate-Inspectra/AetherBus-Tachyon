@@ -33,6 +33,7 @@ func NewRouter(bindAddress, pubAddress string, publisher domain.EventPublisher, 
 
 // Start initializes and runs the ZMQ ROUTER socket loop.
 func (r *Router) Start(ctx context.Context) error {
+	// ... (socket creation and binding code remains the same)
 	// Create ROUTER socket
 	routerSocket, err := zmq4.NewSocket(zmq4.ROUTER)
 	if err != nil {
@@ -84,7 +85,6 @@ func (r *Router) loop(ctx context.Context) {
 		// Poll for events with a timeout
 		sockets, err := poller.Poll(250 * time.Millisecond)
 		if err != nil {
-			// Break on context cancellation
 			if ctx.Err() != nil {
 				break
 			}
@@ -93,28 +93,32 @@ func (r *Router) loop(ctx context.Context) {
 
 		if len(sockets) > 0 {
 			msg, err := r.routerSocket.RecvMessageBytes(0)
-			if err != nil {
-				continue // Log error
-			}
-
-			if len(msg) < 2 {
-				continue // Malformed
+            // Expect: [ClientID, Delimiter, Topic, Payload]
+			if err != nil || len(msg) < 4 {
+				continue // Malformed or error
 			}
 
 			clientID := msg[0]
-			rawEvent := msg[1]
+            // msg[1] is the empty delimiter
+			topic := string(msg[2])
+			rawEvent := msg[3]
 
 			// 1. Decompress
 			decompressedEvent, err := r.compressor.Decompress(rawEvent)
 			if err != nil {
-				continue // Log error
+				// Log error: failed to decompress
+				continue
 			}
 
 			// 2. Decode
 			var event domain.Event
 			if err := r.codec.Decode(decompressedEvent, &event); err != nil {
-				continue // Log error
+				// Log error: failed to decode
+				continue
 			}
+            
+            // Assign the topic from the message frame
+            event.Topic = topic
 
 			envelope := domain.Envelope{
 				ClientID: clientID,
@@ -123,14 +127,11 @@ func (r *Router) loop(ctx context.Context) {
 
 			// 3. Publish to the application logic
 			if err := r.publisher.Publish(ctx, envelope); err == nil {
-				// If successful, publish to the PUB socket (optional)
-				// In a real scenario, you might want to re-encode and re-compress
-				// before publishing.
+				// If successful, publish to the PUB socket for subscribers
 				r.pubSocket.SendMessage(event.Topic, decompressedEvent)
 			}
 		}
 
-		// Check for context cancellation
 		if ctx.Err() != nil {
 			break
 		}

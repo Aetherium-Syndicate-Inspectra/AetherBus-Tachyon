@@ -4,6 +4,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"time"
 
 	zmq "github.com/pebbe/zmq4"
 )
@@ -34,33 +35,28 @@ func (c *tachyonClient) Subscribe(ctx context.Context, topic string, handler Han
 
 	// Run the message handler in a separate goroutine.
 	go func() {
-		defer sub.Close() // Ensure the socket is closed when the goroutine exits.
+		defer sub.Close()
+		poller := zmq.NewPoller()
+		poller.Add(sub, zmq.POLLIN)
+
 		for {
 			select {
-			case <-ctx.Done(): // Context cancellation stops the subscription.
+			case <-ctx.Done():
 				return
 			default:
-				// Poll for messages to avoid blocking indefinitely.
-				msgs, err := sub.RecvMessageBytes(zmq.DONTWAIT)
-				if err != nil {
-					// ZMQ returns EAGAIN when no message is available.
+				// Use Poller to wait for messages without consuming CPU
+				sockets, err := poller.Poll(100 * time.Millisecond)
+				if err != nil || len(sockets) == 0 {
 					continue
 				}
 
-				// The AetherBus SUB protocol sends [Topic, Payload]
-				if len(msgs) == 2 {
-					// We ignore the topic from the message and use the one from the subscription.
+				msgs, err := sub.RecvMessageBytes(0) // No DONTWAIT needed with Poller
+				if err == nil && len(msgs) == 2 { // Expect [Topic, Payload]
 					_ = handler(ctx, topic, msgs[1])
 				}
 			}
 		}
 	}()
 
-	return nil
-}
-
-// Placeholder for Publish method to satisfy the Client interface
-// The actual implementation is in publisher.go
-func (c *tachyonClient) Publish(ctx context.Context, topic string, payload []byte) error {
 	return nil
 }

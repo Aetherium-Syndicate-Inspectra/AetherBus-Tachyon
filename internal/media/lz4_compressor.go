@@ -1,6 +1,7 @@
 package media
 
 import (
+	"fmt"
 	"github.com/pierrec/lz4/v4"
 )
 
@@ -24,13 +25,27 @@ func (c *LZ4Compressor) Compress(data []byte) ([]byte, error) {
 
 // Decompress decompress the given byte slice.
 func (c *LZ4Compressor) Decompress(data []byte) ([]byte, error) {
-	// The decompressed size must be known. In a real-world scenario,
-	// this would be sent as part of the message frame.
-	// For now, we'll assume a reasonable max size.
-	decompressedData := make([]byte, 10*len(data)) // Placeholder size
-	n, err := lz4.UncompressBlock(data, decompressedData)
-	if err != nil {
-		return nil, err
-	}
-	return decompressedData[:n], nil
+    // FUTURE: For maximum safety, the original uncompressed size should be
+    // transmitted as part of the message protocol. This prevents decompression
+    // bombs and allocates the precise amount of memory needed.
+
+    // Start with a reasonable buffer size (e.g., 3x compressed size).
+    // This is a heuristic and might need tuning.
+    bufferSize := len(data) * 3
+    if bufferSize < 1024 { // Have a minimum buffer size
+        bufferSize = 1024
+    }
+
+    decompressedData := make([]byte, bufferSize)
+
+    n, err := lz4.UncompressBlock(data, decompressedData)
+    if err != nil {
+        // If the error indicates the buffer was too small, we could potentially
+        // try again with a larger buffer, but this can be risky.
+        // A better approach is to ensure the initial buffer is sufficient or
+        // transmit the original size.
+        return nil, fmt.Errorf("failed to decompress with lz4: %w", err)
+    }
+
+    return decompressedData[:n], nil
 }
