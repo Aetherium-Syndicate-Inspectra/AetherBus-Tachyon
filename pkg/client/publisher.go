@@ -14,11 +14,12 @@ func (c *tachyonClient) Publish(ctx context.Context, topic string, payload []byt
 		return fmt.Errorf("client is closed")
 	}
 
-	// The message envelope follows the AetherBus protocol:
-	// Frame 1: Topic
-	// Frame 2: Payload
-	// The DEALER socket automatically adds its identity as the first frame.
-	_, err := c.dealer.SendMessage(topic, payload)
+	// The message envelope must match the ROUTER server's expectation:
+	// Frame 1: Client Identity (added automatically by DEALER)
+	// Frame 2: Empty delimiter (for ROUTER compatibility)
+	// Frame 3: Topic
+	// Frame 4: Payload
+	_, err := c.dealer.SendMessage("", topic, payload)
 	if err != nil {
 		return fmt.Errorf("failed to publish message to topic '%s': %w", topic, err)
 	}

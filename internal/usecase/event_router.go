@@ -2,17 +2,16 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aetherbus/aetherbus-tachyon/internal/domain"
+	"github.com/aetherbus/aetherbus-tachyon/pkg/errors"
 )
 
 // EventRouter is the core application logic for routing events.
 // It orchestrates the interaction between the delivery layer and the repository layer.
 type EventRouter struct {
 	routeStore domain.RouteStore
-	// In a real implementation, this would likely be a more complex
-	// component for inter-node communication (e.g., a ZMQ publisher).
-	// For this example, we'll keep it simple.
 }
 
 // NewEventRouter creates a new EventRouter.
@@ -28,9 +27,9 @@ func (r *EventRouter) Publish(ctx context.Context, event domain.Event) error {
 	// 1. Match the topic to a destination node ID.
 	destNodeID := r.routeStore.Match(event.Topic)
 	if destNodeID == "" {
-		// Handle case where no route is found
-		// This could be logging, returning an error, or sending to a default handler.
-		return nil // Or an error like `ErrNoRouteFound`
+		// Log the warning and return a specific error.
+		fmt.Printf("WARN: No route found for topic '%s'\n", event.Topic)
+		return errors.ErrNoRouteFound
 	}
 
 	// 2. In a real system, you would now use the destNodeID to

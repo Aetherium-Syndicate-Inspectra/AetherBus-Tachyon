@@ -9,6 +9,7 @@ require (
 	google.golang.org/protobuf v1.33.0
     github.com/plar/go-adaptive-radix-tree v1.0.5
     github.com/klauspost/compress v1.17.7
+	github.com/kelseyhightower/envconfig v1.4.0
 )
 
 require (

@@ -15,6 +15,7 @@ var (
 	ErrDestinationEmpty = fmt.Errorf("destination is empty")
 	ErrTimeout          = fmt.Errorf("timeout")
 	ErrReplyChannel     = fmt.Errorf("reply channel is not set")
+	ErrNoRouteFound     = fmt.Errorf("no route found for topic")
 )
 
 // RetriableError is an error that can be retried.

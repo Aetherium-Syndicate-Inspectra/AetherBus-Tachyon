@@ -1,80 +1,154 @@
-# 🌌 AetherBus Tachyon
+# AetherBus-Tachyon
 
-**The Central Nervous System for Decentralized AI at the Speed of Light.**
+AetherBus-Tachyon is a high-performance, lightweight event router built with Go and ZeroMQ. It serves as a central hub for routing messages (events) from producers to the appropriate consumers based on predefined topics.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tech: Go](https://img.shields.io/badge/Tech-Go-blue)](https://go.dev/)
-[![GitHub repo stars](https://img.shields.io/github/stars/Aetherium-Syndicate-Inspectra/AetherBus-Tachyon?style=social)](https://github.com/Aetherium-Syndicate-Inspectra/AetherBus-Tachyon)
+It is designed for scenarios where you need a fast, reliable, and scalable message bus without the overhead of larger message brokers.
 
----
+## Architecture
 
-## 🔮 Vision: Beyond Reactive, Towards Predictive
+Tachyon uses a combination of ZMQ socket patterns to create a robust and flexible routing system:
 
-AetherBus Tachyon is engineered to be more than just a data pipeline; it is the ultra-fast backbone for hyperscale, decentralized intelligence. Our vision transcends traditional reactive systems by pioneering a **predictive processing** paradigm.
+1.  **`ROUTER` Socket (`tcp://*:5555`)**: This is the main entry point for incoming events from producers. Producers connect to this socket using a `DEALER` socket. The `ROUTER` socket allows Tachyon to receive messages from multiple clients and know the identity of the sender.
 
-Inspired by advanced concepts like space-based laser communication and high-frequency trading, Tachyon aims to achieve **"Negative Latency"** by processing workloads based on *Intent Probability Waves*—running computations in speculative *Ghost Workers* before the actual request arrives. This makes it the ideal substrate for planet-scale AI and real-time data analysis.
+2.  **`PUB` (Publish) Socket (`tcp://*:5556`)**: After an event is received and validated, Tachyon publishes the event on this socket. Subscribers (consumers) can connect to this `PUB` socket using a `SUB` socket to receive events for the topics they are interested in.
 
-> **For a deep dive into our performance benchmarks and transition strategy, please see our [Tachyon Strategy Document](STRATEGY.md).**
+This model decouples event producers from consumers, allowing for a scalable and resilient microservices architecture.
 
----
+## Getting Started
 
-## 🏛️ Architectural Integrity: A Tale of Two Planes
+### Prerequisites
 
-At its core, Tachyon implements a rigorous **Hexagonal (Clean) Architecture**, ensuring the business logic (Domain) is decoupled from infrastructure concerns. This design manifests as a clear separation between two fundamental operating planes:
+*   **Go**: Version 1.22 or higher.
+*   **Docker**: (Optional) For containerized deployment.
+*   **ZMQ Library**: You need to have the ZeroMQ library installed on your system.
+    *   **On macOS**: `brew install zeromq`
+    *   **On Debian/Ubuntu**: `sudo apt-get install libzmq3-dev`
 
-*   **Control Plane (SWIM Protocol):** Manages cluster membership and state with a gossip-based protocol. This decentralized, leaderless approach ensures limitless scalability and resilience, avoiding the bottlenecks of traditional consensus algorithms like Raft or Paxos.
-*   **Data Plane (Hybrid Delivery):** The high-throughput engine for data transmission, utilizing a hybrid strategy for maximum performance and compatibility:
-    *   **Core (ZeroMQ/RDMA):** For inter-node communication, we use the ZMQ `DEALER-ROUTER` pattern over **RDMA (Remote Direct Memory Access)**. This allows the network card to write data directly into a remote application's memory, bypassing the kernel to achieve sub-microsecond latency.
-    *   **Edge (gRPC):** Public-facing endpoints are exposed via gRPC, providing robust security (TLS/JWT), cross-language interoperability, and seamless integration with existing ecosystems through Protocol Buffers.
+### Running Locally
 
----
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/aetherbus/aetherbus-tachyon.git
+    cd aetherbus-tachyon
+    ```
 
-## 🚀 Core Components: Engineered for Extreme Performance
+2.  **Install dependencies:**
+    ```bash
+    go mod tidy
+    ```
 
-*   **Adaptive Radix Tree (ART) Router:** The heart of our routing engine. It achieves O(k) lookup speed, independent of the number of routes, by leveraging **128-bit SIMD instructions** for parallelized key matching. It's designed to handle millions of topics with near-instantaneous resolution.
+3.  **Run the server:**
+    ```bash
+    go run ./cmd/tachyon
+    ```
+    The server will start and listen for connections on ports 5555 and 5556.
 
-*   **Multi-Algorithm Compression:** On-the-fly data compression with support for multiple algorithms, allowing for runtime optimization based on the use case:
-    *   **LZ4:** For achieving true "wire speed" when latency is the absolute priority.
-    *   **Zstandard (Zstd):** For maximizing compression ratios when bandwidth is constrained.
+### Running with Docker
 
-*   **Concurrency & HFT Techniques:** To handle hyperscale loads without blocking the main event loop, we employ a **Worker Pool** model. Techniques borrowed from high-frequency trading, such as using atomic counters instead of UUIDs and local variable caching, are used to squeeze every nanosecond of performance out of the hot path.
+1.  **Build the Docker image:**
+    ```bash
+    docker build -t aetherbus-tachyon .
+    ```
 
----
+2.  **Run the Docker container:**
+    ```bash
+    docker run -p 5555:5555 -p 5556:5556 --name tachyon-server aetherbus-tachyon
+    ```
+    This will start the Tachyon server inside a container.
 
-## 🌠 The Future: Silicon Photonics & Zero-Copy
+## Configuration
 
-The roadmap for Tachyon extends beyond software optimization into the realm of hardware acceleration:
+The application is configured via environment variables.
 
-*   **Zero-Copy & Pointer Swapping:** By manipulating memory pointers, we can swap data from a "future" buffer (predicted) into the "current" state instantly, making perceived latency approach zero.
-*   **Silicon Photonics (CPO):** The ultimate endgame is to break the "Copper Wall." By integrating optical interconnects directly onto the chip (Co-Packaged Optics), we aim for a staggering **1.6 - 3.2 Tbps** of bandwidth per package, reducing power consumption by over 70% and unlocking performance previously unimaginable.
+| Variable           | Description                             | Default                  |
+| ------------------ | --------------------------------------- | ------------------------ |
+| `ZMQ_BIND_ADDRESS` | The address for the `ROUTER` socket.    | `>tcp://127.0.0.1:5555`  |
+| `ZMQ_PUB_ADDRESS`  | The address for the `PUB` socket.       | `>tcp://127.0.0.1:5556`  |
 
----
+*Note: The `>` prefix in the default address is a convention used by `go-zmq` to indicate a `bind` operation.*
 
-## 🚦 Quick Start
-
-To get a local node running, you need Go (version 1.22 or later) installed.
-
+When running with `docker run`, you can set these variables using the `-e` flag:
 ```bash
-# 1. Clone the repository
-git clone https://github.com/Aetherium-Syndicate-Inspectra/AetherBus-Tachyon.git
-cd AetherBus-Tachyon
-
-# 2. Tidy dependencies
-go mod tidy
-
-# 3. Build the application
-go build ./cmd/aetherbus-node
-
-# 4. Run the node
-./aetherbus-node
+docker run -e ZMQ_BIND_ADDRESS=">tcp://0.0.0.0:5555" -e ZMQ_PUB_ADDRESS=">tcp://0.0.0.0:5556" -p 5555:5555 -p 5556:5556 aetherbus-tachyon
 ```
 
----
+## Testing
 
-## 🤝 Contributing
+The project includes both unit and integration tests.
 
-We welcome contributions to push the boundaries of decentralized computing. Please feel free to open an issue or submit a pull request.
+To run all tests, use the following command:
+```bash
+go test -v ./...
+```
 
-## 📄 License
+The integration test (`cmd/tachyon/main_test.go`) will start a full server instance, send a message, and verify that the message is published correctly.
 
-This project is licensed under the MIT License.
+## Client Example (Go)
+
+Here is a basic example of how to interact with the Tachyon server.
+
+### Producer (Sending an Event)
+
+This program sends a simple JSON payload to the `user.created` topic.
+
+```go
+package main
+
+import (
+    "log"
+    "time"
+    "github.com/pebbe/zmq4"
+)
+
+func main() {
+    dealer, _ := zmq4.NewSocket(zmq4.DEALER)
+    defer dealer.Close()
+    dealer.Connect("tcp://localhost:5555")
+
+    // The topic is part of the message payload in many designs,
+    // or can be inferred. Here, we send a simple JSON string.
+    payload := `{"message": "hello world"}`
+
+    for {
+        log.Println("Sending event...")
+        // The DEALER socket adds the necessary empty frame for the ROUTER
+        dealer.SendMessage(payload)
+        time.Sleep(2 * time.Second)
+    }
+}
+```
+
+### Consumer (Subscribing to an Event)
+
+This program subscribes to the `user.created` topic and prints any messages it receives.
+
+```go
+package main
+
+import (
+    "log"
+    "github.com/pebbe/zmq4"
+)
+
+func main() {
+    subscriber, _ := zmq4.NewSocket(zmq4.SUB)
+    defer subscriber.Close()
+    subscriber.Connect("tcp://localhost:5556")
+    subscriber.SetSubscribe("user.created") // Subscribe to the topic
+
+    log.Println("Listening for events...")
+    for {
+        msg, err := subscriber.RecvMessage(0)
+        if err != nil {
+            log.Fatalf("Error receiving message: %v", err)
+        }
+
+        // Message format: [topic, payload]
+        if len(msg) == 2 {
+            log.Printf("Received Event: Topic=%s, Payload=%s
+", msg[0], msg[1])
+        }
+    }
+}
+
+```
