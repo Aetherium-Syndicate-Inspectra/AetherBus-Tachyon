@@ -1,4 +1,3 @@
-
 # 🌌 AetherBus Tachyon
 
 **The Central Nervous System for Decentralized AI at the Speed of Light.**
@@ -14,6 +13,8 @@
 AetherBus Tachyon is engineered to be more than just a data pipeline; it is the ultra-fast backbone for hyperscale, decentralized intelligence. Our vision transcends traditional reactive systems by pioneering a **predictive processing** paradigm.
 
 Inspired by advanced concepts like space-based laser communication and high-frequency trading, Tachyon aims to achieve **"Negative Latency"** by processing workloads based on *Intent Probability Waves*—running computations in speculative *Ghost Workers* before the actual request arrives. This makes it the ideal substrate for planet-scale AI and real-time data analysis.
+
+> **For a deep dive into our performance benchmarks and transition strategy, please see our [Tachyon Strategy Document](STRATEGY.md).**
 
 ---
 
