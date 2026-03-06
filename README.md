@@ -70,3 +70,21 @@ The server will start and bind to the addresses specified in the configuration (
 3.  **Repository Layer (`repository`):** Provides an abstraction over the data storage. The `ART_RouteStore` implements the `RouteStore` interface using a high-performance radix tree to store and match routing keys.
 
 This separation allows for easy testing and swapping of components. For example, the `RouteStore` could be backed by a different data structure or a distributed key-value store without changing the use case logic.
+
+
+## 📘 Deep Architecture & Protocol Docs
+
+To move AetherBus-Tachyon toward a production-grade broker spec, the repository now defines deeper system contracts in dedicated documents:
+
+- [Protocol Specification v1 (draft)](docs/PROTOCOL.md)
+- [Routing Semantics (ART)](docs/ROUTING.md)
+- [Delivery Semantics (ACK/Retry/Backpressure/DLQ)](docs/DELIVERY.md)
+- [Performance Model and Benchmarking](docs/PERFORMANCE.md)
+
+These docs lock down the key areas that must be explicit for production evolution:
+
+- Protocol envelope and control messages (register/ack/nack)
+- Topic grammar and wildcard matching precedence
+- Delivery guarantees and retry/dead-letter behavior
+- Operational model (backpressure, failure handling, observability)
+
