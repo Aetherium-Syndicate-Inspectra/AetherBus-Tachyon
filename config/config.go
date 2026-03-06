@@ -7,8 +7,8 @@ import (
 // Config holds the application configuration.
 // Values are populated from environment variables.
 type Config struct {
-	ZmqBindAddress string `envconfig:"ZMQ_BIND_ADDRESS" default:">tcp://127.0.0.1:5555"`
-	ZmqPubAddress  string `envconfig:"ZMQ_PUB_ADDRESS" default:">tcp://127.0.0.1:5556"`
+	ZmqBindAddress string `envconfig:"ZMQ_BIND_ADDRESS" default:"tcp://127.0.0.1:5555"`
+	ZmqPubAddress  string `envconfig:"ZMQ_PUB_ADDRESS" default:"tcp://127.0.0.1:5556"`
 }
 
 // Load reads configuration from environment variables and returns a new Config struct.
