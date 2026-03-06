@@ -151,3 +151,8 @@ These docs lock down the key areas that must be explicit for production evolutio
 - Delivery guarantees and retry/dead-letter behavior
 - Operational model (backpressure, failure handling, observability)
 
+## Specifications
+
+- [Protocol Specification](docs/PROTOCOL.md)
+- [Routing Specification](docs/ROUTING.md)
+- [Delivery Specification](docs/DELIVERY.md)
