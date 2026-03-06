@@ -60,7 +60,7 @@ To make troubleshooting easier, use the recovery helper:
 Use this mode when your environment cannot reach external Go module infrastructure:
 
 ```bash
-scripts/go_mod_recovery.sh check
+bash scripts/go_mod_recovery.sh check
 ```
 
 This mode is useful for:
@@ -80,7 +80,7 @@ go test ./cmd/aetherbus
 Use this mode on a machine or CI runner with module download access:
 
 ```bash
-scripts/go_mod_recovery.sh recover
+bash scripts/go_mod_recovery.sh recover
 ```
 
 This runs:
@@ -95,7 +95,7 @@ This runs:
 To inspect the current Go environment:
 
 ```bash
-scripts/go_mod_recovery.sh doctor
+bash scripts/go_mod_recovery.sh doctor
 ```
 
 ### Why this split exists
@@ -106,6 +106,9 @@ dependencies.
 
 In restricted-network environments, the offline-safe path helps confirm whether a failure
 is local to the codebase or caused by module resolution limits.
+
+If `recover` fails with module download/verification errors in restricted environments,
+treat that as an environment limitation first (not an automatic source regression).
 
 ##  Architectural Overview
 

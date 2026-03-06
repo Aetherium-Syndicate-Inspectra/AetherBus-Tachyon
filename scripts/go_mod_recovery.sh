@@ -47,6 +47,25 @@ require_go() {
   fi
 }
 
+network_hint() {
+  cat <<'MSG'
+[go-mod] Online recovery could not complete.
+[go-mod] If this environment blocks external module endpoints, this is expected.
+[go-mod] This is an environment limitation, not necessarily a regression in source code.
+[go-mod] Retry on a network-enabled runner/machine.
+MSG
+}
+
+run_online_step() {
+  local label="$1"
+  shift
+  echo "==> ${label}"
+  if ! "$@"; then
+    network_hint
+    return 1
+  fi
+}
+
 doctor() {
   require_go
   echo "==> Environment diagnostics"
@@ -133,20 +152,16 @@ recover() {
   echo "[go-mod] This mode may download modules and update go.mod / go.sum."
 
   echo
-  echo "==> Step 1: download dependencies"
-  "$GO_BIN" mod download
+  run_online_step "Step 1: download dependencies" "$GO_BIN" mod download
 
   echo
-  echo "==> Step 2: tidy module metadata"
-  "$GO_BIN" mod tidy
+  run_online_step "Step 2: tidy module metadata" "$GO_BIN" mod tidy
 
   echo
-  echo "==> Step 3: build all packages"
-  "$GO_BIN" build ./...
+  run_online_step "Step 3: build all packages" "$GO_BIN" build ./...
 
   echo
-  echo "==> Step 4: run all tests"
-  "$GO_BIN" test ./...
+  run_online_step "Step 4: run all tests" "$GO_BIN" test ./...
 
   echo "[go-mod] Recovery workflow completed successfully"
 }
