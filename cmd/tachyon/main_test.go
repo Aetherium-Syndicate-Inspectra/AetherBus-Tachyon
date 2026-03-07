@@ -1,14 +1,14 @@
-// cmd/tachyon/main_test.go
 package main
 
 import (
-	"context"
 	"os"
 	"sync"
 	"syscall"
 	"testing"
 	"time"
 
+	"github.com/aetherbus/aetherbus-tachyon/internal/domain"
+	"github.com/aetherbus/aetherbus-tachyon/internal/media"
 	"github.com/pebbe/zmq4"
 )
 
@@ -26,7 +26,6 @@ func TestMainIntegration(t *testing.T) {
 
 	// 2. Test Execution: Connect a client and send/receive a message
 	// Create a ZMQ SUB socket to listen for published events
-	// Use the same context to ensure cleanup
 	subSocket, err := zmq4.NewSocket(zmq4.SUB)
 	if err != nil {
 		t.Fatalf("Failed to create SUB socket: %v", err)
@@ -49,15 +48,36 @@ func TestMainIntegration(t *testing.T) {
 		t.Fatalf("Failed to connect DEALER socket: %v", err)
 	}
 
-	// Send a test message
-	testPayload := `{"id":"123","name":"test"}`
-	_, err = dealerSocket.SendMessage(testPayload)
+	testEvent := domain.Event{
+		ID:              "evt-123",
+		Source:          "test-client",
+		Data:            map[string]any{"id": "123", "name": "test"},
+		DataContentType: "application/json",
+		SpecVersion:     "1.0",
+	}
+
+	codec := media.NewJSONCodec()
+	compressor := media.NewLZ4Compressor()
+
+	encodedEvent, err := codec.Encode(testEvent)
+	if err != nil {
+		t.Fatalf("Failed to encode event: %v", err)
+	}
+
+	compressedEvent, err := compressor.Compress(encodedEvent)
+	if err != nil {
+		t.Fatalf("Failed to compress event: %v", err)
+	}
+
+	// Send message following the router protocol: [Delimiter, Topic, Payload]
+	// DEALER automatically prefixes its identity for ROUTER.
+	_, err = dealerSocket.SendMessage("", "user.created", compressedEvent)
 	if err != nil {
 		t.Fatalf("Failed to send message: %v", err)
 	}
 
 	// Receive the message from the SUB socket
-	msg, err := subSocket.RecvMessage(0)
+	msg, err := subSocket.RecvMessageBytes(0)
 	if err != nil {
 		t.Fatalf("Failed to receive message: %v", err)
 	}
@@ -68,20 +88,30 @@ func TestMainIntegration(t *testing.T) {
 	}
 
 	expectedTopic := "user.created"
-	if msg[0] != expectedTopic {
-		t.Errorf("Expected topic '%s', got '%s'", expectedTopic, msg[0])
+	if string(msg[0]) != expectedTopic {
+		t.Errorf("Expected topic '%s', got '%s'", expectedTopic, string(msg[0]))
 	}
 
-	if msg[1] != testPayload {
-		t.Errorf("Expected payload '%s', got '%s'", testPayload, msg[1])
+	var receivedEvent domain.Event
+	if err := codec.Decode(msg[1], &receivedEvent); err != nil {
+		t.Fatalf("Failed to decode received payload: %v", err)
+	}
+
+	if receivedEvent.ID != testEvent.ID {
+		t.Errorf("Expected event ID '%s', got '%s'", testEvent.ID, receivedEvent.ID)
+	}
+
+	if receivedEvent.Source != testEvent.Source {
+		t.Errorf("Expected source '%s', got '%s'", testEvent.Source, receivedEvent.Source)
+	}
+
+	if receivedEvent.Topic != expectedTopic {
+		t.Errorf("Expected topic '%s' in event, got '%s'", expectedTopic, receivedEvent.Topic)
 	}
 
 	// 4. Teardown: Gracefully shut down the server
-	// Send a SIGINT signal to the current process to trigger shutdown
-	// This simulates Ctrl+C
 	p, _ := os.FindProcess(os.Getpid())
 	p.Signal(syscall.SIGINT)
 
-	// Wait for the main function to exit
 	wg.Wait()
 }
