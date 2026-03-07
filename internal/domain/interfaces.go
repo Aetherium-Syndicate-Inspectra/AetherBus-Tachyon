@@ -15,5 +15,5 @@ type RouteStore interface {
 // EventPublisher defines the interface for publishing events to the bus.
 // This is the primary entry point for the application logic (usecase) to send data.
 type EventPublisher interface {
-	Publish(ctx context.Context, event Event) error
+	Publish(ctx context.Context, envelope Envelope) error
 }

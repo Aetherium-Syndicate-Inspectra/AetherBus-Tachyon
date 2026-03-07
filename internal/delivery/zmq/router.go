@@ -11,13 +11,13 @@ import (
 
 // Router manages the ZMQ ROUTER socket for incoming events.
 type Router struct {
-	bindAddress string
-	pubAddress  string
-	publisher   domain.EventPublisher
+	bindAddress  string
+	pubAddress   string
+	publisher    domain.EventPublisher
 	routerSocket *zmq4.Socket
 	pubSocket    *zmq4.Socket
-	codec       domain.Codec
-	compressor  domain.Compressor
+	codec        domain.Codec
+	compressor   domain.Compressor
 }
 
 // NewRouter creates a new ZMQ Router.
@@ -93,13 +93,13 @@ func (r *Router) loop(ctx context.Context) {
 
 		if len(sockets) > 0 {
 			msg, err := r.routerSocket.RecvMessageBytes(0)
-            // Expect: [ClientID, Delimiter, Topic, Payload]
+			// Expect: [ClientID, Delimiter, Topic, Payload]
 			if err != nil || len(msg) < 4 {
 				continue // Malformed or error
 			}
 
 			clientID := msg[0]
-            // msg[1] is the empty delimiter
+			// msg[1] is the empty delimiter
 			topic := string(msg[2])
 			rawEvent := msg[3]
 
@@ -116,9 +116,9 @@ func (r *Router) loop(ctx context.Context) {
 				// Log error: failed to decode
 				continue
 			}
-            
-            // Assign the topic from the message frame
-            event.Topic = topic
+
+			// Assign the topic from the message frame
+			event.Topic = topic
 
 			envelope := domain.Envelope{
 				ClientID: clientID,
