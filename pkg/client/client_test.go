@@ -11,7 +11,8 @@ import (
 	zmq "github.com/pebbe/zmq4"
 )
 
-// mockTachyonServer simulates the AetherBus ROUTER/PUB backend for testing.	ype mockTachyonServer struct {
+// mockTachyonServer simulates the AetherBus ROUTER/PUB backend for testing.
+type mockTachyonServer struct {
 	ctx    *zmq.Context
 	router *zmq.Socket // To receive from client's DEALER
 	pub    *zmq.Socket // To publish to client's SUB
