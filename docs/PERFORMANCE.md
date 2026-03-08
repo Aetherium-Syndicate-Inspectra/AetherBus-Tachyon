@@ -74,3 +74,14 @@ The project should define explicit target SLOs over time, for example:
 - maximum acceptable unroutable rate
 
 Set concrete numbers once baseline benchmark results are available in CI/perf environments.
+
+## 5) Compression Toggle for Benchmarking
+
+The default runtime wiring (`internal/app.NewRuntime`) uses LZ4 compression.
+For benchmark scenarios that require `--compress=false`, use benchmark runtime wiring:
+
+- `cmd/tachyon/main.go` exposes a `--compress` flag (default `true`).
+- `internal/app.NewBenchmarkRuntime(...)` selects LZ4 when enabled and a no-op compressor when disabled.
+
+This allows fair comparison between compressed and uncompressed broker paths without introducing cgo/FFI complexity.
+

@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/aetherbus/aetherbus-tachyon/config"
 	"github.com/aetherbus/aetherbus-tachyon/internal/delivery/zmq"
+	"github.com/aetherbus/aetherbus-tachyon/internal/domain"
 	"github.com/aetherbus/aetherbus-tachyon/internal/media"
 	"github.com/aetherbus/aetherbus-tachyon/internal/repository"
 	"github.com/aetherbus/aetherbus-tachyon/internal/usecase"
@@ -16,13 +17,17 @@ type Runtime struct {
 
 // NewRuntime wires the core Tachyon runtime from config and bootstrap routes.
 func NewRuntime(cfg *config.Config, bootstrapRoutes map[string]string) *Runtime {
+	return NewRuntimeWithCompressor(cfg, bootstrapRoutes, media.NewLZ4Compressor())
+}
+
+// NewRuntimeWithCompressor wires the core Tachyon runtime with an explicit compressor.
+func NewRuntimeWithCompressor(cfg *config.Config, bootstrapRoutes map[string]string, compressor domain.Compressor) *Runtime {
 	routeStore := repository.NewART_RouteStore()
 	for topic, nodeID := range bootstrapRoutes {
 		routeStore.AddRoute(topic, nodeID)
 	}
 
 	codec := media.NewJSONCodec()
-	compressor := media.NewLZ4Compressor()
 	eventRouter := usecase.NewEventRouter(routeStore)
 	router := zmq.NewRouter(cfg.ZmqBindAddress, cfg.ZmqPubAddress, eventRouter, codec, compressor)
 
@@ -30,4 +35,13 @@ func NewRuntime(cfg *config.Config, bootstrapRoutes map[string]string) *Runtime 
 		RouteStore: routeStore,
 		Router:     router,
 	}
+}
+
+// NewBenchmarkRuntime wires runtime for benchmark scenarios and allows compression toggle.
+func NewBenchmarkRuntime(cfg *config.Config, bootstrapRoutes map[string]string, compress bool) *Runtime {
+	if compress {
+		return NewRuntimeWithCompressor(cfg, bootstrapRoutes, media.NewLZ4Compressor())
+	}
+
+	return NewRuntimeWithCompressor(cfg, bootstrapRoutes, media.NewNoopCompressor())
 }

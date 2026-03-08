@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -13,6 +14,9 @@ import (
 )
 
 func main() {
+	compress := flag.Bool("compress", true, "Enable LZ4 compression in the router runtime")
+	flag.Parse()
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -24,9 +28,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	runtime := app.NewRuntime(cfg, map[string]string{
+	runtime := app.NewBenchmarkRuntime(cfg, map[string]string{
 		"user.created": "node-1",
-	})
+	}, *compress)
 	zmqRouter := runtime.Router
 
 	// Start the ZMQ router in a goroutine
